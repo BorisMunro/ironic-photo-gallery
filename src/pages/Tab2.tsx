@@ -16,8 +16,10 @@ import {
 import ExploreContainer from '../components/ExploreContainer';
 import './Tab2.css';
 import { camera } from 'ionicons/icons';
+import { usePhotoGallery } from '../hooks/usePhotoGallery';
 
 const Tab2: React.FC = () => {
+  const { takePhoto } = usePhotoGallery();
   return (
     <IonPage>
       <IonHeader>
@@ -27,7 +29,7 @@ const Tab2: React.FC = () => {
       </IonHeader>
       <IonContent fullscreen>
         <IonFab vertical='bottom' horizontal='center' slot='fixed'>
-          <IonFabButton onClick={() => {}}>
+          <IonFabButton onClick={() => takePhoto()}>
             <IonIcon icon={camera}></IonIcon>
           </IonFabButton>
         </IonFab>
