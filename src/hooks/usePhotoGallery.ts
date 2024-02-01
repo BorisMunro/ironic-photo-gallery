@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { isPlatform } from "@ionic/react";
 
 import { Camera, CameraResultType, CameraSource, Photo } from "@capacitor/camera";
 
-import { Filesystem, Directory, base64FromPath } from "@capacitor/filesystem";
+import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Preferences } from "@capacitor/preferences";
 import { Capacitor } from "@capacitor/core";
 
@@ -11,6 +12,8 @@ export interface UserPhoto {
     filePath: string;
     webviewPath?: string;
 }
+
+const PHOTO_STORAGE = 'photos';
 
 export async function base64FromPath(path: string): Promise<string> {
     const response = await fetch(path);
@@ -32,6 +35,23 @@ export async function base64FromPath(path: string): Promise<string> {
 export function usePhotoGallery() {
     const [photos, setPhotos] = useState<UserPhoto[]>([]);
 
+    useEffect(() => {
+        const loadSaved = async () => {
+          const { value } = await Preferences.get({ key: PHOTO_STORAGE });
+          const photosInPreferences = (value ? JSON.parse(value) : []) as UserPhoto[];
+      
+          for (let photo of photosInPreferences) {
+            const file = await Filesystem.readFile({
+              path: photo.filePath,
+              directory: Directory.Data,
+            });
+            // Web platform only: Load the photo as base64 data
+            photo.webviewPath = `data:image/jpeg;base64,${file.data}`;
+          }
+          setPhotos(photosInPreferences);
+        };
+        loadSaved();
+    }, []);
     const takePhoto =async () => {
         const photo = await Camera.getPhoto({
             resultType: CameraResultType.Uri,
@@ -42,6 +62,7 @@ export function usePhotoGallery() {
         const savedFileImage = await savePicture(photo, fileName);
         const newPhotos = [savedFileImage, ...photos];
         setPhotos(newPhotos);
+        Preferences.set({ key: PHOTO_STORAGE, value: JSON.stringify(newPhotos) });
     };
 
     const savePicture =async (photo: Photo, fileName: string): Promise<UserPhoto> => {
@@ -56,7 +77,7 @@ export function usePhotoGallery() {
             webviewPath: photo.webPath,
         };
     };
-    
+
     return {
         photos,
         takePhoto
